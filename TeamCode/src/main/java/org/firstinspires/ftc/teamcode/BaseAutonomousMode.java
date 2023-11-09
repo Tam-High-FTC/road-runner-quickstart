@@ -5,8 +5,10 @@ import android.graphics.Color;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.Trajectory;
+import com.acmerobotics.roadrunner.Vector2d;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
@@ -95,68 +97,69 @@ public class BaseAutonomousMode extends LinearOpMode {
             }
         }
 
-//        TrajectorySequenceBuilder toSignalTileTrajectoryBuilder = drive.trajectorySequenceBuilder(new Pose2d())
-//                .forward(1 * TILE_WIDTH);
-//        Trajectory postSignalTrajectory;
-//        switch(signal){
-//            case -1:
-//                 toSignalTileTrajectoryBuilder
-////                         .strafeLeft(29);
-//                         .turn(Math.toRadians(-90));
-//                         //.turn(10);
-//                break;
-//            case 0:
-//                break;
-//            case 1:
-//            default:
-//                toSignalTileTrajectoryBuilder
-////                        .strafeRight(29);
-//                        .turn(-Math.toRadians(180));
-//                break;
-//
+        Action toSignalTileAction = drive.actionBuilder(new Pose2d(0,0,0))
+                .strafeTo(new Vector2d(0, 1 * TILE_WIDTH)).build();
+        toSignalTileAction.run();
+        Trajectory postSignalTrajectory;
+        switch(signal){
+            case -1:
+                 toSignalTileTrajectoryBuilder
+//                         .strafeLeft(29);
+                         .turn(Math.toRadians(-90));
+                         //.turn(10);
+                break;
+            case 0:
+                break;
+            case 1:
+            default:
+                toSignalTileTrajectoryBuilder
+//                        .strafeRight(29);
+                        .turn(-Math.toRadians(180));
+                break;
+
+        }
+        drive.followTrajectorySequence(toSignalTileTrajectoryBuilder.build());
+
+        // Creep forward until on the tape to drop the pixel.
+        boolean onTape = false;
+        Pose2d inTilePose = drive.getPoseEstimate();
+        while (!onTape){
+            /* Color sensor check START */
+            NormalizedRGBA colors = colorSensor.getNormalizedColors();
+            Color.colorToHSV(colors.toColor(), hsvValues);
+            /* Logic to what color tape it is over. */
+            float saturation = hsvValues[1];
+            onTape = (saturation >= 0.6) || (colors.red > 0.04);
+            drive.followTrajectory(
+                    drive.trajectoryBuilder(drive.getPoseEstimate())
+                            .forward(1)
+                            .build()
+            );
+            telemetry.addData("Saturation: ", saturation);
+            telemetry.update();
+        }
+
+        sleep(500);
+        purplePixelServo.setPosition(PIXEL_DROPPED);
+        sleep(500);
+
+//        for (int i = 0 ; i < 10; i++){
+//            drive.setMotorPowers(1,1,1,1);
+//            sleep(100);
+//            drive.setMotorPowers(-1,-1,-1,-1);
+//            sleep(100);
 //        }
-//        drive.followTrajectorySequence(toSignalTileTrajectoryBuilder.build());
-//
-//        // Creep forward until on the tape to drop the pixel.
-//        boolean onTape = false;
-//        Pose2d inTilePose = drive.getPoseEstimate();
-//        while (!onTape){
-//            /* Color sensor check START */
-//            NormalizedRGBA colors = colorSensor.getNormalizedColors();
-//            Color.colorToHSV(colors.toColor(), hsvValues);
-//            /* Logic to what color tape it is over. */
-//            float saturation = hsvValues[1];
-//            onTape = (saturation >= 0.6) || (colors.red > 0.04);
-//            drive.followTrajectory(
-//                    drive.trajectoryBuilder(drive.getPoseEstimate())
-//                            .forward(1)
-//                            .build()
-//            );
-//            telemetry.addData("Saturation: ", saturation);
-//            telemetry.update();
-//        }
-//
-//        sleep(500);
-//        purplePixelServo.setPosition(PIXEL_DROPPED);
-//        sleep(500);
-//
-////        for (int i = 0 ; i < 10; i++){
-////            drive.setMotorPowers(1,1,1,1);
-////            sleep(100);
-////            drive.setMotorPowers(-1,-1,-1,-1);
-////            sleep(100);
-////        }
-//
-////        sleep(500); //make sure the pixel is on the ground before we set the servo
-//        //it drags the pixel with it unless it's at a 90 degree angle to the ground
-//        purplePixelServo.setPosition(PIXEL_POST_DROP);
-//
-//        drive.followTrajectorySequence(
-//                drive.trajectorySequenceBuilder(drive.getPoseEstimate())
-//                        .waitSeconds(0.5)
-//                        .lineToLinearHeading(inTilePose)
-//                        .build()
-//        );
+
+//        sleep(500); //make sure the pixel is on the ground before we set the servo
+        //it drags the pixel with it unless it's at a 90 degree angle to the ground
+        purplePixelServo.setPosition(PIXEL_POST_DROP);
+
+        drive.followTrajectorySequence(
+                drive.trajectorySequenceBuilder(drive.getPoseEstimate())
+                        .waitSeconds(0.5)
+                        .lineToLinearHeading(inTilePose)
+                        .build()
+        );
 
         /* Color sensor check END */
 
