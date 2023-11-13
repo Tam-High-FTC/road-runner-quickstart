@@ -212,6 +212,25 @@ public final class RobotOneMecanumDrive {
         rightFront.setPower(wheelVels.rightFront.get(0) / maxPowerMag);
     }
 
+    public void moveForward(double time) {
+        leftFront.setPower(1);
+        rightFront.setPower(1);
+        leftBack.setPower(1);
+        rightBack.setPower(1);
+    }
+
+    public void turn90(int direction) {
+        assert((direction >= -1) && (direction <= 1));
+        if (direction == 0) {
+            return;
+        }
+
+        leftFront.setPower(direction);
+        rightFront.setPower(direction);
+        leftBack.setPower(direction);
+        rightBack.setPower(direction);
+    }
+
     public final class FollowTrajectoryAction implements Action {
         public final TimeTrajectory timeTrajectory;
         private double beginTs = -1;
